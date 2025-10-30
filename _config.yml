@@ -104,7 +104,4 @@ deploy:
   type: git
   repo: git@github.com:Sun1105/Sun1105.github.io.git
   branch: main
-
-edit:
-  enable: true
-  url: https://github.com/Sun1105/blog-source/edit/main/source/_posts/
+  
