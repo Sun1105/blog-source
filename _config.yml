@@ -108,4 +108,4 @@ deploy:
 theme_config:
   edit:
     enable: true
-    url: https://github.com/Sun1105/blog-source/edit/main/source/_posts/
+    url: https://github.com/Sun1105/blog-source/edit/main/source/
