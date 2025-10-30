@@ -107,4 +107,4 @@ deploy:
 
 edit:
   enable: true
-  url: https://github.com/Sun1105/Sun1105.github.io.git/edit/main/source/_posts/
+  url: https://github.com/Sun1105/blog-source/edit/main/source/_posts/
