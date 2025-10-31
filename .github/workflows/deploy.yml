@@ -1,36 +1,58 @@
 name: Deploy Hexo Blog to GitHub Pages
 
+# 触发条件：
+# 1. 当 main 分支有 push 时自动触发
+# 2. 也可以手动在 Actions 页面点击 "Run workflow" 触发
 on:
   push:
     branches:
-      - main  # 当 main 分支有 push 时触发部署
+      - main
+  workflow_dispatch:
+
+# 并发控制：保证同一时间只有一个部署任务在跑
+# 如果有新的部署触发，会自动取消之前未完成的部署，避免资源浪费
+concurrency:
+  group: hexo-deploy
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # 使用最新的 Ubuntu Runner 环境
 
     steps:
       # 1️⃣ 拉取源码
-      - name: Checkout blog source
+      - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 拉取完整 git 历史，避免某些 Hexo 插件依赖历史提交时报错
 
-      # 2️⃣ 安装 Node.js
+      # 2️⃣ 设置 Node.js 环境
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'  # 使用 Node.js 20 LTS 版本
+          cache: 'npm'        # 开启 npm 缓存，加快后续构建速度
 
-      # 3️⃣ 安装依赖并构建
-      - name: Install and Build
+      # 3️⃣ 安装依赖
+      - name: Install dependencies
+        run: npm ci  # 使用 npm ci，严格按照 package-lock.json 安装，保证依赖一致性
+
+      # 4️⃣ 构建 Hexo 静态文件
+      - name: Generate site (Hexo)
+        env:
+          CI: true  # 避免某些依赖在 CI 环境下交互式提问
         run: |
-          npm install
-          npx hexo generate
+          npx hexo version || true   # 打印 Hexo 版本，方便调试
+          npx hexo clean             # 清理旧的 public 文件，避免缓存问题
+          npx hexo generate          # 生成新的静态文件到 ./public
 
-      # 4️⃣ 部署到 GitHub Pages 仓库
-      - name: Deploy to GitHub Pages
+      # 5️⃣ 部署到 GitHub Pages 仓库
+      - name: Deploy to Pages (push to sun1105.github.io)
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-          external_repository: Sun1105/sun1105.github.io
-          publish_branch: main
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # GitHub 提供的临时 Token
+          publish_dir: ./public                      # Hexo 生成的静态文件目录
+          external_repository: Sun1105/sun1105.github.io  # 目标仓库（存放静态页面）
+          publish_branch: main                       # 部署到目标仓库的 main 分支
+          commit_message: "🚀 Auto deploy from blog-source via Actions"
+          # 自定义 commit message，方便区分是自动部署
