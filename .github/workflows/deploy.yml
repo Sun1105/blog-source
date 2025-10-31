@@ -50,7 +50,7 @@ jobs:
       - name: Deploy to Pages (push to sun1105.github.io)
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}  # GitHub 提供的临时 Token
+          personal_token: ${{ secrets.PUBLISH_TOKEN }}   # <- 使用 PAT 替代 GITHUB_TOKEN
           publish_dir: ./public                      # Hexo 生成的静态文件目录
           external_repository: Sun1105/sun1105.github.io  # 目标仓库（存放静态页面）
           publish_branch: main                       # 部署到目标仓库的 main 分支
