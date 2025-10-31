@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>编辑文章 - Sun Blog</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; margin: 0; }
+    header { padding: 10px; background: #222; color: white; display: flex; align-items: center; gap: 10px; }
+    textarea { flex: 1; width: 50%; padding: 10px; font-size: 16px; }
+    #preview { flex: 1; padding: 10px; overflow-y: auto; background: #f8f8f8; }
+    main { display: flex; flex: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <button id="login">GitHub 登录</button>
+    <button id="newFile">新建文件</button>
+    <button id="save">保存</button>
+    <input id="filename" placeholder="文件名，例如 new-post.md" style="width:250px;">
+  </header>
+
+  <main>
+    <textarea id="editor" placeholder="在这里输入 Markdown 内容..."></textarea>
+    <div id="preview"></div>
+  </main>
+
+  <script>
+    const clientId = "👉 填入你的 GitHub OAuth Client ID 👈";
+    const repo = "blog-source";
+    const owner = "Sun1105";
+
+    // 登录跳转
+    document.getElementById('login').onclick = () => {
+      const redirectUri = encodeURIComponent(window.location.href);
+      const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=repo&redirect_uri=${redirectUri}`;
+      window.location.href = url;
+    };
+
+    // 实时预览
+    const editor = document.getElementById("editor");
+    const preview = document.getElementById("preview");
+    editor.addEventListener("input", () => {
+      preview.innerHTML = marked.parse(editor.value);
+    });
+
+    // 保存文件到 GitHub
+    document.getElementById('save').onclick = async () => {
+      const token = localStorage.getItem("gh_token");
+      if (!token) return alert("请先登录");
+      const filename = document.getElementById("filename").value;
+      const content = btoa(unescape(encodeURIComponent(editor.value)));
+
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/source/_posts/${filename}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: "update " + filename,
+          content: content,
+        }),
+      });
+
+      if (res.ok) alert("✅ 保存成功！");
+      else alert("❌ 保存失败：" + res.statusText);
+    };
+  </script>
+</body>
+</html>

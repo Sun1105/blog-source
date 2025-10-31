@@ -1,0 +1,36 @@
+name: Deploy Hexo Blog to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # 当 main 分支有 push 时触发部署
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ 拉取源码
+      - name: Checkout blog source
+        uses: actions/checkout@v4
+
+      # 2️⃣ 安装 Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 3️⃣ 安装依赖并构建
+      - name: Install and Build
+        run: |
+          npm install
+          npx hexo generate
+
+      # 4️⃣ 部署到 GitHub Pages 仓库
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          external_repository: Sun1105/sun1105.github.io
+          publish_branch: main
