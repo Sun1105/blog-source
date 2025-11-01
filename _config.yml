@@ -3,17 +3,18 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Hexo
-subtitle: ''
-description: ''
-keywords:
-author: John Doe
-language: en
-timezone: ''
+title: Sun Blog
+subtitle: '技术笔记与生活记录'
+description: '一个记录开发、学习与生活点滴的博客'
+keywords: [Java, Spring Boot, Hexo, 日本生活]
+author: SUN
+language: zh-CN
+timezone: Asia/Tokyo
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
-url: http://example.com
+## url: https://Sun1105.github.io
+url: https://blog-source-lime.vercel.app
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 pretty_urls:

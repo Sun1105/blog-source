@@ -1,0 +1,10 @@
+<% if (theme.edit && theme.edit.enable) { %>
+  <% 
+    // 构建 GitHub 编辑链接
+    const filePath = page.source || '';
+    const editUrl = theme.edit.url + filePath;
+  %>
+  <div class="edit-link" style="margin-top:1em;">
+    <a href="<%= editUrl %>" target="_blank" rel="noopener noreferrer">📝 编辑此页</a>
+  </div>
+<% } %>
