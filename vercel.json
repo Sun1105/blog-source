@@ -1,17 +1,60 @@
 {
+  "//说明": "=== 基本信息 ===",
   "version": 2,
+
+  "//builds说明": "=== 指定构建方式 ===",
   "builds": [
     {
       "src": "api/**/*.js",
       "use": "@vercel/node"
     },
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "public" }
+      "src": "public/**",
+      "use": "@vercel/static"
     }
   ],
+
+  "//routes说明": "=== 定义路由规则 ===",
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1.js" }
-  ]
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+
+  "//env说明": "=== 环境变量（安全信息写这里）===",
+  "env": {
+    "LOGIN_USER": "admin",
+    "LOGIN_PASS": "123456",
+    "JWT_SECRET": "my_blog_secret_key",
+    "DATA_FILE_PATH": "./data/articles.json",
+    "ALLOW_ORIGIN": "*"
+  },
+
+  "//functions说明": "=== 可选：配置函数运行环境 ===",
+  "functions": {
+    "api/**/*.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  },
+
+  "//headers说明": "=== 添加跨域与缓存控制 ===",
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,DELETE,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    }
+  ],
+
+  "//ignore说明": "=== 指定忽略文件（可选）===",
+  "ignore": ["node_modules", ".git", ".github", ".vscode", "README.md"]
 }
