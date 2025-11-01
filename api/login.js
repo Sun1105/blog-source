@@ -9,16 +9,28 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  const { username, password } = req.body;
+  try {
+    // ✅ 解析请求体（vercel 不自动解析）
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const { username, password } = body || {};
 
-  if (
-    username === process.env.ADMIN_USER &&
-    password === process.env.ADMIN_PASS
-  ) {
-    // 登录成功，返回一个简单 token（可用 JWT 代替）
-    const token = Buffer.from(`${username}:${Date.now()}`).toString("base64");
-    return res.status(200).json({ success: true, token });
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: "缺少用户名或密码" });
+    }
+
+    // ✅ 检查账号密码（从环境变量中读取）
+    if (
+      username === process.env.ADMIN_USER &&
+      password === process.env.ADMIN_PASS
+    ) {
+      // 登录成功，返回 token
+      const token = Buffer.from(`${username}:${Date.now()}`).toString("base64");
+      return res.status(200).json({ success: true, token });
+    }
+
+    return res.status(401).json({ success: false, message: "用户名或密码错误" });
+  } catch (error) {
+    console.error("Login Error:", error);
+    return res.status(500).json({ success: false, message: "Server Error" });
   }
-
-  res.status(401).json({ success: false, message: "用户名或密码错误" });
 }
