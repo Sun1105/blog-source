@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>编辑文章 - Sun Blog</title>
+<title>编辑文章 - Sun Blog（免登录版）</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
@@ -19,15 +19,13 @@
 </head>
 <body>
 <header>
-  <button id="login">GitHub 登录</button>
-  <button id="logout">登出</button>
   <select id="fileList"><option>加载中...</option></select>
   <button id="load">加载</button>
   <button id="newFile">新建</button>
   <button id="save">保存</button>
   <button id="delete">删除</button>
   <input id="filename" placeholder="例如: 2025-10-31-my-post.md" style="width:260px">
-  <span class="small" id="userInfo"></span>
+  <span class="small" id="userInfo">免登录模式</span>
 </header>
 
 <main>
@@ -41,15 +39,12 @@
 
 <script>
 /* 配置区 —— 请替换下面常量为你的信息 */
-const CLIENT_ID = "Ov23liqGdMkbekoq6AFO"; // GitHub OAuth App 的 Client ID
-const PROXY_URL = "https://github-oauth-proxy-eta.vercel.app/api/auth"; // 你部署的 Vercel API 地址
-const OWNER = "Sun1105";
-const REPO = "blog-source";
-const POSTS_PATH = "source/_posts"; // 仓库中存放文章的目录（相对仓库根目录）
+const OWNER = "Sun1105";                // GitHub 用户名
+const REPO = "blog-source";             // 仓库名
+const POSTS_PATH = "source/_posts";     // 仓库中的目录路径
+const TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // ⚠️ 你的个人访问令牌（仅你自己使用，不要泄露）
 /* 结束配置区 */
 
-const loginBtn = document.getElementById('login');
-const logoutBtn = document.getElementById('logout');
 const fileList = document.getElementById('fileList');
 const loadBtn = document.getElementById('load');
 const newBtn = document.getElementById('newFile');
@@ -58,11 +53,10 @@ const deleteBtn = document.getElementById('delete');
 const filenameInput = document.getElementById('filename');
 const editor = document.getElementById('editor');
 const preview = document.getElementById('preview');
-const userInfo = document.getElementById('userInfo');
 
-let currentFileSha = null; // 编辑或加载文件时保存 sha（更新/删除时用）
+let currentFileSha = null; // 记录当前文件 sha
 
-// --- 高级小工具：base64 编码/解码（支持 utf-8） ---
+// --- 工具函数 ---
 function b64EncodeUnicode(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
@@ -75,109 +69,44 @@ editor.addEventListener('input', () => {
   preview.innerHTML = marked.parse(editor.value || "");
 });
 
-// 登录跳转
-loginBtn.onclick = () => {
-  const redirect = encodeURIComponent(window.location.href);
-  const url = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=repo&redirect_uri=${redirect}`;
-  window.location.href = url;
-};
+// 页面加载时自动列出文件
+window.onload = () => loadFileList();
 
-// 登出
-logoutBtn.onclick = () => {
-  localStorage.removeItem('gh_token');
-  localStorage.removeItem('gh_user');
-  userInfo.textContent = "";
-  alert("已登出");
-};
-
-// 页面加载时处理 OAuth 回调 ?code=xxx
-(async function handleOAuthCallback(){
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (code) {
-    // 向你的代理请求换 token
-    try {
-      const resp = await fetch(`${PROXY_URL}?code=${encodeURIComponent(code)}`);
-      const data = await resp.json();
-      if (data.access_token) {
-        localStorage.setItem('gh_token', data.access_token);
-        // 清理 URL 的 code 参数
-        window.history.replaceState({}, document.title, location.pathname);
-        alert('登录成功！');
-        await loadUserAndList();
-      } else {
-        console.error(data);
-        alert('登录失败：' + JSON.stringify(data));
-      }
-    } catch (err) {
-      console.error(err);
-      alert('登录代理请求失败');
-    }
-  } else {
-    // 如果之前有 token，尝试读取用户信息并列文件
-    if (localStorage.getItem('gh_token')) {
-      await loadUserAndList();
-    } else {
-      // 无 token，初始状态
-      fileList.innerHTML = '<option>请先登录</option>';
-    }
-  }
-})();
-
-// 获取登录用户信息并加载文章列表
-async function loadUserAndList(){
-  const token = localStorage.getItem('gh_token');
-  if (!token) return;
-  try {
-    const u = await (await fetch('https://api.github.com/user', { headers: { Authorization: 'token ' + token }})).json();
-    userInfo.textContent = `已登录: ${u.login}`;
-    localStorage.setItem('gh_user', u.login);
-  } catch (e) {
-    console.error(e);
-    userInfo.textContent = '获取用户信息失败';
-  }
-  await loadFileList();
-}
-
-// 列出 posts 目录下的文件
+// 列出文章文件
 async function loadFileList(){
   fileList.disabled = true;
   fileList.innerHTML = '<option>加载中...</option>';
-  const token = localStorage.getItem('gh_token');
   try {
     const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${POSTS_PATH}`, {
-      headers: { Authorization: 'token ' + token }
+      headers: { Authorization: 'token ' + TOKEN }
     });
     if (!resp.ok) throw resp;
     const data = await resp.json();
-    // 筛选出 md 文件并按名字排序
     const files = data.filter(f => f.type === 'file').sort((a,b) => a.name.localeCompare(b.name));
     if (files.length === 0) {
       fileList.innerHTML = '<option>暂无文章</option>';
-      fileList.disabled = false;
-      return;
+    } else {
+      fileList.innerHTML = files.map(f => `<option value="${f.name}" data-sha="${f.sha}">${f.name}</option>`).join('');
     }
-    fileList.innerHTML = files.map(f => `<option value="${f.name}" data-sha="${f.sha}">${f.name}</option>`).join('');
-    fileList.disabled = false;
   } catch (err) {
     console.error(err);
-    fileList.innerHTML = '<option>加载失败（请登录或检查路径）</option>';
+    fileList.innerHTML = '<option>加载失败</option>';
+  } finally {
     fileList.disabled = false;
   }
 }
 
-// 点击加载选中文件
+// 加载文件
 loadBtn.onclick = async () => {
-  const token = localStorage.getItem('gh_token');
   const name = fileList.value;
   if (!name) return alert('请选择文件');
   try {
     const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${POSTS_PATH}/${encodeURIComponent(name)}`, {
-      headers: { Authorization: 'token ' + token }
+      headers: { Authorization: 'token ' + TOKEN }
     });
     if (!resp.ok) throw await resp.json();
     const data = await resp.json();
-    const content = b64DecodeUnicode(data.content.replace(/\n/g,'')); // decode
+    const content = b64DecodeUnicode(data.content.replace(/\n/g,''));
     editor.value = content;
     preview.innerHTML = marked.parse(content);
     filenameInput.value = name;
@@ -185,11 +114,11 @@ loadBtn.onclick = async () => {
     alert('加载成功');
   } catch (e) {
     console.error(e);
-    alert('加载失败：查看控制台');
+    alert('加载失败');
   }
 };
 
-// 新建文件（清空编辑器并设定默认文件名）
+// 新建文件
 newBtn.onclick = () => {
   editor.value = `---\ntitle: 新文章\ndate: ${new Date().toISOString()}\n---\n\n在此写内容`;
   preview.innerHTML = marked.parse(editor.value);
@@ -197,16 +126,12 @@ newBtn.onclick = () => {
   currentFileSha = null;
 };
 
-// 保存（支持新建和更新）
+// 保存（创建或更新）
 saveBtn.onclick = async () => {
-  const token = localStorage.getItem('gh_token');
-  if (!token) return alert('请先登录');
   let filename = filenameInput.value.trim();
   if (!filename) return alert('请输入文件名');
-
-  // 简单校验扩展名
   if (!filename.endsWith('.md') && !filename.endsWith('.markdown')) {
-    if (!confirm('文件名似乎没有 .md 扩展名，仍继续？')) return;
+    if (!confirm('文件名没有 .md 扩展名，是否继续？')) return;
   }
 
   const content = editor.value || '';
@@ -214,22 +139,16 @@ saveBtn.onclick = async () => {
   const path = `${POSTS_PATH}/${filename}`;
   const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
 
-  // 获取现有文件的 sha（如果没有 currentFileSha 则尝试拉取）
+  // 获取现有文件 sha
   let sha = currentFileSha;
   if (!sha) {
-    // 尝试获取文件以确认是否已存在
     try {
-      const r = await fetch(url, { headers: { Authorization: 'token ' + token }});
+      const r = await fetch(url, { headers: { Authorization: 'token ' + TOKEN }});
       if (r.ok) {
         const d = await r.json();
         sha = d.sha;
-      } else {
-        // 404 就认为是新文件
-        sha = null;
       }
-    } catch(e) {
-      console.warn('检查现有文件失败', e);
-    }
+    } catch(e) {}
   }
 
   const body = { message: sha ? `Update ${filename}` : `Create ${filename}`, content: b64 };
@@ -238,13 +157,13 @@ saveBtn.onclick = async () => {
   try {
     const resp = await fetch(url, {
       method: 'PUT',
-      headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+      headers: { Authorization: 'token ' + TOKEN, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     const data = await resp.json();
     if (resp.ok) {
       currentFileSha = data.content.sha;
-      alert('保存成功，GitHub 已接收变更。GitHub Actions 将自动部署（视队列而定）。');
+      alert('保存成功！GitHub 已接收变更。');
       await loadFileList();
     } else {
       console.error(data);
@@ -256,26 +175,23 @@ saveBtn.onclick = async () => {
   }
 };
 
-// 删除文件（需要 sha）
+// 删除文件
 deleteBtn.onclick = async () => {
-  const token = localStorage.getItem('gh_token');
   const name = fileList.value || filenameInput.value;
   if (!name) return alert('请选择或输入要删除的文件名');
-  if (!confirm(`确定删除 ${name} 吗？此操作会在仓库记录一次删除提交。`)) return;
+  if (!confirm(`确定删除 ${name} 吗？`)) return;
 
-  // 获取文件 sha
   try {
     const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${POSTS_PATH}/${encodeURIComponent(name)}`, {
-      headers: { Authorization: 'token ' + token }
+      headers: { Authorization: 'token ' + TOKEN }
     });
     if (!r.ok) throw await r.json();
     const d = await r.json();
     const sha = d.sha;
 
-    // 发起删除请求
     const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${POSTS_PATH}/${encodeURIComponent(name)}`, {
       method: 'DELETE',
-      headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+      headers: { Authorization: 'token ' + TOKEN, 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: `Delete ${name}`, sha })
     });
     const info = await resp.json();
@@ -292,7 +208,7 @@ deleteBtn.onclick = async () => {
     }
   } catch (e) {
     console.error(e);
-    alert('删除过程失败，请查看控制台');
+    alert('删除失败');
   }
 };
 </script>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>新建文章</title>
+  </head>
+<body>
+    <h1>📝 新建文章</h1>
+	  <!-- 说明：
+	       - 本页面是一个简单的“新建文章”前端示例，会生成符合 Hexo 习惯的文件名（YYYY-MM-DD-slug.md）
+	       - 会在 Markdown 文件头部自动生成 YAML Front-Matter（title 与 date），然后把完整内容发到后端 API（/api/savePost）
+	       - 强烈建议：后端必须做严格校验（认证、filePath 白名单、内容 & 路径安全检查、速率限制）
+	  -->
+    <input id="title" placeholder="请输入文章标题（自动生成文件名）">
+    <textarea id="content" placeholder="请输入文章内容..."></textarea>
+    <button id="save">创建文章</button>
+
+    <script>
+    // 为“创建文章”按钮添加点击事件监听器
+    document.getElementById("save").onclick = async () => {
+      // 1. 获取输入框的值
+      const title = document.getElementById("title").value.trim(); // 获取标题并去除首尾空格
+      const content = document.getElementById("content").value; // 获取文章内容
+
+      // 2. 基础数据校验
+      if (!title || !content) {
+        alert("标题和内容不能为空");
+        return; // 如果为空，则终止后续操作
+      }
+
+      // 3. 动态生成文件路径 (Hexo 博客结构)
+      // 替换标题中的所有空白字符（\s+）为短横线（-），并作为文件名。
+      // 文件路径格式：source/_posts/文章标题-用-短横线-连接.md
+      const filePath = `source/_posts/${title.replace(/\s+/g, '-')}.md`;
+      
+      // 4. 发送 POST 请求到 Serverless Function (API)
+      const res = await fetch("https://你的-vercel-域名.vercel.app/api/savePost", {
+        method: "POST", // 使用 POST 方法提交数据
+        headers: { "Content-Type": "application/json" }, // 告知服务器请求体是 JSON 格式
+        body: JSON.stringify({ // 将数据对象转换为 JSON 字符串
+          filePath, // 新文章的完整文件路径
+          content, // 文章的 Markdown 内容
+          message: `新建文章：${title}`, // 提交到 GitHub 时的 Commit 消息
+        }),
+      });
+      
+      // 5. 解析并处理 API 响应
+      const data = await res.json();
+      
+      // 根据 API 返回的 success 字段判断操作结果
+      if (data.success) {
+        alert("✅ 文章已创建，几分钟后会自动部署！");
+      } else {
+        alert("❌ 出错：" + data.error);
+      }
+    };
+  </script>
+</body>
+</html>
