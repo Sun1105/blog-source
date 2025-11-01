@@ -34,7 +34,7 @@
       const filePath = `source/_posts/${title.replace(/\s+/g, '-')}.md`;
       
       // 4. 发送 POST 请求到 Serverless Function (API)
-      const res = await fetch("https://你的-vercel-域名.vercel.app/api/savePost", {
+      const res = await fetch("https://blog-source-lime.vercel.app/api/savePost", {
         method: "POST", // 使用 POST 方法提交数据
         headers: { "Content-Type": "application/json" }, // 告知服务器请求体是 JSON 格式
         body: JSON.stringify({ // 将数据对象转换为 JSON 字符串

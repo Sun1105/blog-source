@@ -67,7 +67,7 @@
       document.getElementById("result").textContent = "正在保存，请稍候...";
 
       // 发送 POST 请求到 Vercel Serverless Function (API)
-      const res = await fetch("https://你的-vercel-域名.vercel.app/api/savePost", {
+      const res = await fetch("https://blog-source-lime.vercel.app/api/savePost", {
         method: "POST", // HTTP 方法为 POST
         headers: { "Content-Type": "application/json" }, // 设置请求头，表明发送 JSON 数据
         body: JSON.stringify({ // 将数据转换为 JSON 字符串作为请求体
