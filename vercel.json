@@ -1,14 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "public" }
-    }
-  ],
-  "scripts": {
-    "build": "npm run build"
-  },
+  "framework": "hexo",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "outputDirectory": "public"
 }
